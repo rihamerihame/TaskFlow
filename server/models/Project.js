@@ -12,6 +12,17 @@ const projectSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    ownerName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    ownerEmail: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
     color: {
       type: String,
       trim: true,

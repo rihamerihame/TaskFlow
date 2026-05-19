@@ -107,6 +107,12 @@
         gap: 0;
       }
 
+      .identity-form {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 0;
+      }
+
       input,
       select,
       textarea {
@@ -144,6 +150,11 @@
         border-radius: 0;
       }
 
+      .identity-form input:nth-child(2) {
+        border-left: none;
+        border-radius: 0;
+      }
+
       button {
         padding: 12px 18px;
         background: var(--primary);
@@ -160,7 +171,8 @@
 
       .input-group button,
       .project-form button,
-      .member-form button {
+      .member-form button,
+      .identity-form button {
         border-radius: 0 10px 10px 0;
       }
 
@@ -196,6 +208,12 @@
         margin: 0;
         color: var(--muted);
         font-size: 14px;
+      }
+
+      .toolbar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
       }
 
       ul {
@@ -237,7 +255,9 @@
       }
 
       .priority-badge,
-      .member-role {
+      .member-role,
+      .status-badge,
+      .access-badge {
         font-size: 12px;
         font-weight: bold;
         padding: 6px 10px;
@@ -265,6 +285,18 @@
         color: #2874a6;
       }
 
+      .status-badge {
+        background: #edf2ff;
+        color: #355c7d;
+      }
+
+      .access-badge {
+        background: #eef6ff;
+        color: #1f618d;
+        margin-top: 10px;
+        display: inline-block;
+      }
+
       .delete-button {
         background: var(--danger);
         border-radius: 8px;
@@ -276,10 +308,36 @@
         background: var(--danger-dark);
       }
 
+      .secondary-button {
+        background: #7f8c8d;
+        border-radius: 8px;
+      }
+
+      .secondary-button:hover {
+        background: #636e72;
+      }
+
+      button:disabled {
+        background: #c7d3d8;
+        cursor: not-allowed;
+      }
+
       .list-empty {
         color: var(--muted);
         font-size: 14px;
         padding: 12px 0 4px;
+      }
+
+      .member-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .small-button {
+        padding: 8px 10px;
+        font-size: 13px;
+        border-radius: 8px;
       }
 
       .member-item,
@@ -328,19 +386,23 @@
         .input-group,
         .project-form,
         .member-form,
-        .project-select {
+        .project-select,
+        .identity-form {
           flex-direction: column;
         }
 
         .input-group input,
         .project-form input,
         .member-form input:first-child,
+        .identity-form input:first-child,
         .input-group select,
         .member-form input:nth-child(2),
         .member-form select,
+        .identity-form input:nth-child(2),
         .input-group button,
         .project-form button,
-        .member-form button {
+        .member-form button,
+        .identity-form button {
           border-radius: 10px;
           border-left: 1px solid #d9e1e5;
         }
@@ -359,6 +421,19 @@
         <h1>TaskFlow</h1>
         <div id="message" class="message"></div>
 
+        <div class="panel" style="margin-bottom: 28px">
+          <div class="section-head">
+            <h2>Utilisateur courant</h2>
+            <p class="hint">Cet utilisateur sert a simuler le controle d'acces.</p>
+          </div>
+
+          <div class="identity-form">
+            <input type="text" id="currentUserNameInput" placeholder="Ton nom" />
+            <input type="email" id="currentUserEmailInput" placeholder="Ton email" />
+            <button id="saveIdentityButton" type="button">Enregistrer</button>
+          </div>
+        </div>
+
         <div class="panel">
           <div class="section-head">
             <h2>Projets</h2>
@@ -372,6 +447,14 @@
                 <button id="refreshProjectsButton" type="button">Rafraichir</button>
               </div>
               <div id="projectDetails" class="project-card" style="margin-top: 12px"></div>
+              <div class="toolbar" style="margin-top: 12px">
+                <button id="updateProjectButton" class="secondary-button" type="button">
+                  Mettre a jour
+                </button>
+                <button id="deleteProjectButton" class="delete-button" type="button">
+                  Supprimer le projet
+                </button>
+              </div>
             </div>
 
             <div>
@@ -406,6 +489,11 @@
                   id="taskInput"
                   placeholder="Ajouter une nouvelle tache..."
                 />
+                <select id="statusInput">
+                  <option value="A faire" selected>A faire</option>
+                  <option value="En cours">En cours</option>
+                  <option value="Terminee">Terminee</option>
+                </select>
                 <select id="priorityInput">
                   <option value="Basse">Basse</option>
                   <option value="Moyenne" selected>Moyenne</option>
@@ -452,7 +540,10 @@
       const API_BASE = "http://localhost:5001";
       const DRAFT_STORAGE_KEY = "taskflow-task-draft";
       const ACTIVE_PROJECT_STORAGE_KEY = "taskflow-active-project";
+      const USER_NAME_STORAGE_KEY = "taskflow-user-name";
+      const USER_EMAIL_STORAGE_KEY = "taskflow-user-email";
       let activeProjectId = null;
+      let activeProject = null;
 
       function saveDraft(value) {
         localStorage.setItem(DRAFT_STORAGE_KEY, value);
@@ -478,6 +569,90 @@
         }
       }
 
+      function loadIdentity() {
+        document.getElementById("currentUserNameInput").value =
+          localStorage.getItem(USER_NAME_STORAGE_KEY) || "";
+        document.getElementById("currentUserEmailInput").value =
+          localStorage.getItem(USER_EMAIL_STORAGE_KEY) || "";
+      }
+
+      function getCurrentUser() {
+        return {
+          name: document.getElementById("currentUserNameInput").value.trim(),
+          email: document
+            .getElementById("currentUserEmailInput")
+            .value.trim()
+            .toLowerCase(),
+        };
+      }
+
+      function saveIdentity() {
+        const user = getCurrentUser();
+
+        localStorage.setItem(USER_NAME_STORAGE_KEY, user.name);
+        localStorage.setItem(USER_EMAIL_STORAGE_KEY, user.email);
+        updateOwnerControls();
+        setMessage("Utilisateur enregistre.", "success");
+        refreshProjects().catch(() => {
+          setMessage(
+            "Le serveur ne repond pas. Lance npm start puis ouvre http://localhost:5001.",
+          );
+        });
+      }
+
+      function getHeaders() {
+        const user = getCurrentUser();
+        const headers = { "Content-Type": "application/json" };
+
+        if (user.email) {
+          headers["x-user-email"] = user.email;
+        }
+
+        if (user.name) {
+          headers["x-user-name"] = user.name;
+        }
+
+        return headers;
+      }
+
+      function isCurrentUserOwner(project = activeProject) {
+        const user = getCurrentUser();
+        return Boolean(
+          project &&
+            project.ownerEmail &&
+            user.email &&
+            project.ownerEmail === user.email,
+        );
+      }
+
+      function isCurrentUserInvited(project = activeProject) {
+        return project?.access === "invite";
+      }
+
+      function hasProjectWorkspaceAccess(project = activeProject) {
+        return ["owner", "member"].includes(project?.access);
+      }
+
+      function updateOwnerControls() {
+        const isOwner = isCurrentUserOwner();
+        const hasProject = Boolean(activeProject);
+        const hasWorkspaceAccess = hasProjectWorkspaceAccess();
+        document.getElementById("updateProjectButton").disabled =
+          !hasProject || !isOwner;
+        document.getElementById("deleteProjectButton").disabled =
+          !hasProject || !isOwner;
+        document.getElementById("inviteMemberButton").disabled =
+          !hasProject || !isOwner;
+        document.getElementById("addTaskButton").disabled =
+          !hasProject || !hasWorkspaceAccess;
+        document.getElementById("taskInput").disabled =
+          !hasProject || !hasWorkspaceAccess;
+        document.getElementById("statusInput").disabled =
+          !hasProject || !hasWorkspaceAccess;
+        document.getElementById("priorityInput").disabled =
+          !hasProject || !hasWorkspaceAccess;
+      }
+
       function setMessage(text, type = "") {
         const message = document.getElementById("message");
         message.textContent = text;
@@ -494,7 +669,9 @@
       }
 
       async function fetchProjects() {
-        const response = await fetch(`${API_BASE}/api/projects`);
+        const response = await fetch(`${API_BASE}/api/projects`, {
+          headers: getHeaders(),
+        });
 
         if (!response.ok) {
           throw new Error("Impossible de charger les projets.");
@@ -518,6 +695,8 @@
           renderEmptyState("taskList", "Aucune tache pour le moment.");
           renderEmptyState("memberList", "Aucun membre invite.");
           renderEmptyState("historyList", "Aucune action enregistree.");
+          activeProject = null;
+          updateOwnerControls();
           return;
         }
 
@@ -535,10 +714,13 @@
           projects[0];
 
         activeProjectId = nextProject.id;
+        activeProject = nextProject;
         projectSelect.value = nextProject.id;
         saveActiveProject(nextProject.id);
         renderProjectDetails(nextProject);
+        updateOwnerControls();
         await Promise.all([fetchTasks(), fetchMembers(), fetchHistory()]);
+        setMessage("");
       }
 
       function renderProjectDetails(project) {
@@ -546,6 +728,8 @@
         details.innerHTML = `
           <strong>${project.name}</strong>
           <p>${project.description || "Pas encore de description."}</p>
+          <p style="margin-top: 8px">Createur : ${project.ownerName || "Inconnu"} (${project.ownerEmail || "non defini"})</p>
+          <span class="access-badge">Acces : ${project.access || "owner"}</span>
         `;
         details.style.borderLeft = `5px solid ${project.color || "#3498db"}`;
       }
@@ -555,17 +739,28 @@
         const descriptionInput = document.getElementById("projectDescriptionInput");
         const name = nameInput.value.trim();
         const description = descriptionInput.value.trim();
+        const user = getCurrentUser();
 
         if (!name) {
           setMessage("Ecris un nom de projet avant de cliquer sur Creer.");
           return;
         }
 
+        if (!user.name || !user.email) {
+          setMessage("Renseigne ton nom et ton email avant de creer un projet.");
+          return;
+        }
+
         try {
           const response = await fetch(`${API_BASE}/api/projects`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, description }),
+            headers: getHeaders(),
+            body: JSON.stringify({
+              name,
+              description,
+              ownerName: user.name,
+              ownerEmail: user.email,
+            }),
           });
 
           if (!response.ok) {
@@ -582,11 +777,94 @@
         }
       }
 
+      async function updateProject() {
+        if (!activeProjectId) {
+          setMessage("Choisis un projet a mettre a jour.");
+          return;
+        }
+
+        if (!isCurrentUserOwner()) {
+          setMessage("Seul le createur du projet peut le modifier.");
+          return;
+        }
+
+        const name = document.getElementById("projectNameInput").value.trim();
+        const description = document
+          .getElementById("projectDescriptionInput")
+          .value.trim();
+
+        if (!name) {
+          setMessage("Le nom du projet est obligatoire pour la mise a jour.");
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/api/projects/${activeProjectId}`, {
+            method: "PUT",
+            headers: getHeaders(),
+            body: JSON.stringify({ name, description }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Mise a jour impossible");
+          }
+
+          setMessage("Projet mis a jour.", "success");
+          await refreshProjects(activeProjectId);
+        } catch (error) {
+          setMessage("Impossible de mettre a jour le projet.");
+        }
+      }
+
+      async function deleteProject() {
+        if (!activeProjectId) {
+          setMessage("Choisis un projet a supprimer.");
+          return;
+        }
+
+        if (!isCurrentUserOwner()) {
+          setMessage("Seul le createur du projet peut le supprimer.");
+          return;
+        }
+
+        const confirmed = window.confirm(
+          "Supprimer ce projet ainsi que ses taches, membres et historique ?",
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/api/projects/${activeProjectId}`, {
+            method: "DELETE",
+            headers: getHeaders(),
+          });
+
+          if (!response.ok) {
+            throw new Error("Suppression impossible");
+          }
+
+          setMessage("Projet supprime.", "success");
+          await refreshProjects();
+        } catch (error) {
+          setMessage("Impossible de supprimer le projet.");
+        }
+      }
+
       async function fetchTasks() {
         const list = document.getElementById("taskList");
 
         if (!activeProjectId) {
           renderEmptyState("taskList", "Choisis ou cree un projet.");
+          return;
+        }
+
+        if (!hasProjectWorkspaceAccess()) {
+          renderEmptyState(
+            "taskList",
+            "Accepte d'abord ton invitation pour acceder aux taches de ce projet.",
+          );
           return;
         }
 
@@ -625,17 +903,23 @@
             priority.dataset.priority = task.priority || "Moyenne";
             priority.textContent = task.priority || "Moyenne";
 
+            const status = document.createElement("span");
+            status.className = "status-badge";
+            status.textContent = task.status || "A faire";
+
             const deleteButton = document.createElement("button");
             deleteButton.className = "delete-button";
             deleteButton.textContent = "Supprimer";
             deleteButton.addEventListener("click", () => deleteTask(task.id));
 
             meta.appendChild(title);
+            meta.appendChild(status);
             meta.appendChild(priority);
             li.appendChild(meta);
             li.appendChild(deleteButton);
             list.appendChild(li);
           });
+          setMessage("");
         } catch (error) {
           setMessage(
             "Le serveur ne repond pas. Lance npm start puis ouvre http://localhost:5001.",
@@ -645,12 +929,19 @@
 
       async function addTask() {
         const input = document.getElementById("taskInput");
+        const statusInput = document.getElementById("statusInput");
         const priorityInput = document.getElementById("priorityInput");
         const title = input.value.trim();
+        const status = statusInput.value;
         const priority = priorityInput.value;
 
         if (!activeProjectId) {
           setMessage("Cree ou choisis un projet avant d'ajouter une tache.");
+          return;
+        }
+
+        if (!hasProjectWorkspaceAccess()) {
+          setMessage("Accepte d'abord ton invitation avant d'ajouter une tache.");
           return;
         }
 
@@ -662,8 +953,13 @@
         try {
           const response = await fetch(`${API_BASE}/api/tasks`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title, priority, projectId: activeProjectId }),
+            headers: getHeaders(),
+            body: JSON.stringify({
+              title,
+              status,
+              priority,
+              projectId: activeProjectId,
+            }),
           });
 
           if (!response.ok) {
@@ -671,6 +967,7 @@
           }
 
           input.value = "";
+          statusInput.value = "A faire";
           priorityInput.value = "Moyenne";
           clearDraft();
           setMessage("Tache ajoutee.", "success");
@@ -684,6 +981,7 @@
         try {
           const response = await fetch(`${API_BASE}/api/tasks/${taskId}`, {
             method: "PUT",
+            headers: getHeaders(),
           });
 
           if (!response.ok) {
@@ -700,6 +998,7 @@
         try {
           const response = await fetch(`${API_BASE}/api/tasks/${taskId}`, {
             method: "DELETE",
+            headers: getHeaders(),
           });
 
           if (!response.ok) {
@@ -722,6 +1021,9 @@
         try {
           const response = await fetch(
             `${API_BASE}/api/projects/${activeProjectId}/members`,
+            {
+              headers: getHeaders(),
+            },
           );
 
           if (!response.ok) {
@@ -747,6 +1049,37 @@
               </div>
               <span class="member-email">${member.email} - ${member.status}</span>
             `;
+
+            const actions = document.createElement("div");
+            actions.className = "member-actions";
+
+            if (
+              member.status === "invite" &&
+              member.email === getCurrentUser().email
+            ) {
+              const acceptButton = document.createElement("button");
+              acceptButton.className = "small-button";
+              acceptButton.textContent = "Accepter";
+              acceptButton.addEventListener("click", () =>
+                acceptInvitation(member.id),
+              );
+              actions.appendChild(acceptButton);
+            }
+
+            if (isCurrentUserOwner()) {
+              const removeButton = document.createElement("button");
+              removeButton.className = "delete-button small-button";
+              removeButton.textContent = "Retirer";
+              removeButton.addEventListener("click", () =>
+                removeMember(member.id),
+              );
+              actions.appendChild(removeButton);
+            }
+
+            if (actions.childElementCount > 0) {
+              li.appendChild(actions);
+            }
+
             list.appendChild(li);
           });
         } catch (error) {
@@ -777,7 +1110,7 @@
             `${API_BASE}/api/projects/${activeProjectId}/members`,
             {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: getHeaders(),
               body: JSON.stringify({ name, email, role }),
             },
           );
@@ -796,15 +1129,68 @@
         }
       }
 
+      async function acceptInvitation(memberId) {
+        try {
+          const response = await fetch(
+            `${API_BASE}/api/projects/${activeProjectId}/members/${memberId}/accept`,
+            {
+              method: "PUT",
+              headers: getHeaders(),
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error("Acceptation impossible");
+          }
+
+          setMessage("Invitation acceptee.", "success");
+          await refreshProjects(activeProjectId);
+        } catch (error) {
+          setMessage("Impossible d'accepter cette invitation.");
+        }
+      }
+
+      async function removeMember(memberId) {
+        try {
+          const response = await fetch(
+            `${API_BASE}/api/projects/${activeProjectId}/members/${memberId}`,
+            {
+              method: "DELETE",
+              headers: getHeaders(),
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error("Suppression impossible");
+          }
+
+          setMessage("Membre retire.", "success");
+          await Promise.all([fetchMembers(), fetchHistory()]);
+        } catch (error) {
+          setMessage("Impossible de retirer ce membre.");
+        }
+      }
+
       async function fetchHistory() {
         if (!activeProjectId) {
           renderEmptyState("historyList", "Choisis ou cree un projet.");
           return;
         }
 
+        if (!hasProjectWorkspaceAccess()) {
+          renderEmptyState(
+            "historyList",
+            "Accepte d'abord ton invitation pour voir l'historique.",
+          );
+          return;
+        }
+
         try {
           const response = await fetch(
             `${API_BASE}/api/projects/${activeProjectId}/history`,
+            {
+              headers: getHeaders(),
+            },
           );
 
           if (!response.ok) {
@@ -853,9 +1239,14 @@
           const project = projects.find((item) => item.id === activeProjectId);
 
           if (project) {
+            activeProject = project;
             renderProjectDetails(project);
           }
 
+          document.getElementById("projectNameInput").value = project?.name || "";
+          document.getElementById("projectDescriptionInput").value =
+            project?.description || "";
+          updateOwnerControls();
           await Promise.all([fetchTasks(), fetchMembers(), fetchHistory()]);
         } catch (error) {
           setMessage("Impossible de changer de projet.");
@@ -887,13 +1278,26 @@
         .addEventListener("click", createProject);
 
       document
+        .getElementById("updateProjectButton")
+        .addEventListener("click", updateProject);
+
+      document
+        .getElementById("deleteProjectButton")
+        .addEventListener("click", deleteProject);
+
+      document
         .getElementById("inviteMemberButton")
         .addEventListener("click", inviteMember);
+
+      document
+        .getElementById("saveIdentityButton")
+        .addEventListener("click", saveIdentity);
 
       document
         .getElementById("refreshProjectsButton")
         .addEventListener("click", () => refreshProjects());
 
+      loadIdentity();
       loadDraft();
       refreshProjects().catch(() => {
         setMessage(
