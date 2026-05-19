@@ -1,13 +1,29 @@
 {
   "name": "taskflow",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Application web complete de gestion de projets collaboratifs.",
+  "main": "server/server.js",
   "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rihamerihame/TaskFlow.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/rihamerihame/TaskFlow/issues"
+  },
+  "homepage": "https://github.com/rihamerihame/TaskFlow#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mongoose": "^9.6.2"
+  }
 }

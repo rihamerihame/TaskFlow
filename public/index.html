@@ -1,0 +1,1309 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TaskFlow</title>
+    <style>
+      :root {
+        --bg: #f4f7f6;
+        --panel: #ffffff;
+        --text: #2c3e50;
+        --muted: #6b7b8c;
+        --border: #dfe6e9;
+        --primary: #3498db;
+        --primary-dark: #2980b9;
+        --danger: #e74c3c;
+        --danger-dark: #c0392b;
+        --success: #1e8449;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(180deg, #f8fbfa 0%, #eef4f3 100%);
+        margin: 0;
+        color: var(--text);
+      }
+
+      .page {
+        width: min(1100px, calc(100% - 32px));
+        margin: 40px auto;
+      }
+
+      .container {
+        background: var(--panel);
+        padding: 30px;
+        border-radius: 18px;
+        box-shadow: 0 14px 45px rgba(44, 62, 80, 0.12);
+      }
+
+      h1 {
+        margin: 0 0 24px;
+        text-align: center;
+        font-size: 52px;
+        color: var(--text);
+      }
+
+      h2 {
+        margin: 0 0 14px;
+        font-size: 22px;
+      }
+
+      .section {
+        margin-top: 28px;
+      }
+
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .hint {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 0;
+      }
+
+      .message {
+        min-height: 24px;
+        margin-bottom: 16px;
+        color: #c0392b;
+        font-size: 14px;
+      }
+
+      .message.success {
+        color: var(--success);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+      }
+
+      .side-stack {
+        display: grid;
+        gap: 24px;
+      }
+
+      .panel {
+        background: #f9fbfb;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px;
+      }
+
+      .input-group,
+      .project-form,
+      .member-form {
+        display: flex;
+        gap: 0;
+      }
+
+      .identity-form {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 0;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #d9e1e5;
+        outline: none;
+        font-size: 16px;
+        background: white;
+        color: var(--text);
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: var(--primary);
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 86px;
+        border-radius: 10px;
+      }
+
+      .input-group input,
+      .project-form input,
+      .member-form input:first-child {
+        border-radius: 10px 0 0 10px;
+      }
+
+      .input-group select,
+      .member-form input:nth-child(2),
+      .member-form select {
+        border-left: none;
+        border-radius: 0;
+      }
+
+      .identity-form input:nth-child(2) {
+        border-left: none;
+        border-radius: 0;
+      }
+
+      button {
+        padding: 12px 18px;
+        background: var(--primary);
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+      }
+
+      button:hover {
+        background: var(--primary-dark);
+      }
+
+      .input-group button,
+      .project-form button,
+      .member-form button,
+      .identity-form button {
+        border-radius: 0 10px 10px 0;
+      }
+
+      .project-row {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 16px;
+      }
+
+      .project-select {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .project-select select {
+        border-radius: 10px;
+      }
+
+      .project-card {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        background: white;
+      }
+
+      .project-card strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .project-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .toolbar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      li {
+        background: #f8f9fa;
+        margin-bottom: 10px;
+        padding: 15px;
+        border-radius: 10px;
+        border-left: 4px solid var(--primary);
+        color: #333;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .completed {
+        text-decoration: line-through;
+        color: #95a5a6;
+        border-left-color: #95a5a6;
+      }
+
+      .task-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .task-title {
+        flex: 1;
+        word-break: break-word;
+      }
+
+      .priority-badge,
+      .member-role,
+      .status-badge,
+      .access-badge {
+        font-size: 12px;
+        font-weight: bold;
+        padding: 6px 10px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+
+      .priority-badge[data-priority="Basse"] {
+        background: #eafaf1;
+        color: #1e8449;
+      }
+
+      .priority-badge[data-priority="Moyenne"] {
+        background: #fef5e7;
+        color: #b9770e;
+      }
+
+      .priority-badge[data-priority="Haute"] {
+        background: #fdedec;
+        color: #c0392b;
+      }
+
+      .member-role {
+        background: #eaf2f8;
+        color: #2874a6;
+      }
+
+      .status-badge {
+        background: #edf2ff;
+        color: #355c7d;
+      }
+
+      .access-badge {
+        background: #eef6ff;
+        color: #1f618d;
+        margin-top: 10px;
+        display: inline-block;
+      }
+
+      .delete-button {
+        background: var(--danger);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 14px;
+      }
+
+      .delete-button:hover {
+        background: var(--danger-dark);
+      }
+
+      .secondary-button {
+        background: #7f8c8d;
+        border-radius: 8px;
+      }
+
+      .secondary-button:hover {
+        background: #636e72;
+      }
+
+      button:disabled {
+        background: #c7d3d8;
+        cursor: not-allowed;
+      }
+
+      .list-empty {
+        color: var(--muted);
+        font-size: 14px;
+        padding: 12px 0 4px;
+      }
+
+      .member-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .small-button {
+        padding: 8px 10px;
+        font-size: 13px;
+        border-radius: 8px;
+      }
+
+      .member-item,
+      .history-item {
+        display: block;
+        border-left-width: 3px;
+      }
+
+      .member-line,
+      .history-line {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .member-email,
+      .history-meta {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 6px;
+      }
+
+      @media (max-width: 900px) {
+        .grid,
+        .project-row {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 680px) {
+        .page {
+          width: min(100%, calc(100% - 20px));
+          margin: 20px auto;
+        }
+
+        .container {
+          padding: 20px;
+        }
+
+        h1 {
+          font-size: 40px;
+        }
+
+        .input-group,
+        .project-form,
+        .member-form,
+        .project-select,
+        .identity-form {
+          flex-direction: column;
+        }
+
+        .input-group input,
+        .project-form input,
+        .member-form input:first-child,
+        .identity-form input:first-child,
+        .input-group select,
+        .member-form input:nth-child(2),
+        .member-form select,
+        .identity-form input:nth-child(2),
+        .input-group button,
+        .project-form button,
+        .member-form button,
+        .identity-form button {
+          border-radius: 10px;
+          border-left: 1px solid #d9e1e5;
+        }
+
+        li,
+        .member-line,
+        .history-line {
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="container">
+        <h1>TaskFlow</h1>
+        <div id="message" class="message"></div>
+
+        <div class="panel" style="margin-bottom: 28px">
+          <div class="section-head">
+            <h2>Utilisateur courant</h2>
+            <p class="hint">Cet utilisateur sert a simuler le controle d'acces.</p>
+          </div>
+
+          <div class="identity-form">
+            <input type="text" id="currentUserNameInput" placeholder="Ton nom" />
+            <input type="email" id="currentUserEmailInput" placeholder="Ton email" />
+            <button id="saveIdentityButton" type="button">Enregistrer</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-head">
+            <h2>Projets</h2>
+            <p class="hint">Choisis un projet puis ajoute tes taches dedans.</p>
+          </div>
+
+          <div class="project-row">
+            <div>
+              <div class="project-select">
+                <select id="projectSelect"></select>
+                <button id="refreshProjectsButton" type="button">Rafraichir</button>
+              </div>
+              <div id="projectDetails" class="project-card" style="margin-top: 12px"></div>
+              <div class="toolbar" style="margin-top: 12px">
+                <button id="updateProjectButton" class="secondary-button" type="button">
+                  Mettre a jour
+                </button>
+                <button id="deleteProjectButton" class="delete-button" type="button">
+                  Supprimer le projet
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div class="project-form">
+                <input
+                  type="text"
+                  id="projectNameInput"
+                  placeholder="Nom du projet"
+                />
+                <button id="createProjectButton" type="button">Creer</button>
+              </div>
+              <textarea
+                id="projectDescriptionInput"
+                placeholder="Description du projet"
+                style="margin-top: 10px"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid section">
+          <div>
+            <div class="panel">
+              <div class="section-head">
+                <h2>Taches</h2>
+                <p class="hint">Clique sur une tache pour changer son statut.</p>
+              </div>
+
+              <div class="input-group">
+                <input
+                  type="text"
+                  id="taskInput"
+                  placeholder="Ajouter une nouvelle tache..."
+                />
+                <select id="statusInput">
+                  <option value="A faire" selected>A faire</option>
+                  <option value="En cours">En cours</option>
+                  <option value="Terminee">Terminee</option>
+                </select>
+                <select id="priorityInput">
+                  <option value="Basse">Basse</option>
+                  <option value="Moyenne" selected>Moyenne</option>
+                  <option value="Haute">Haute</option>
+                </select>
+                <button id="addTaskButton" type="button">Ajouter</button>
+              </div>
+              <ul id="taskList"></ul>
+            </div>
+          </div>
+
+          <div class="side-stack">
+            <div class="panel">
+              <div class="section-head">
+                <h2>Membres</h2>
+                <p class="hint">Invite des personnes sur le projet actif.</p>
+              </div>
+
+              <div class="member-form">
+                <input type="text" id="memberNameInput" placeholder="Nom" />
+                <input type="email" id="memberEmailInput" placeholder="Email" />
+                <select id="memberRoleInput">
+                  <option value="Membre">Membre</option>
+                  <option value="Admin">Admin</option>
+                </select>
+                <button id="inviteMemberButton" type="button">Inviter</button>
+              </div>
+              <ul id="memberList" style="margin-top: 14px"></ul>
+            </div>
+
+            <div class="panel">
+              <div class="section-head">
+                <h2>Historique</h2>
+                <p class="hint">Les dernieres actions sur ce projet.</p>
+              </div>
+              <ul id="historyList"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = "http://localhost:5001";
+      const DRAFT_STORAGE_KEY = "taskflow-task-draft";
+      const ACTIVE_PROJECT_STORAGE_KEY = "taskflow-active-project";
+      const USER_NAME_STORAGE_KEY = "taskflow-user-name";
+      const USER_EMAIL_STORAGE_KEY = "taskflow-user-email";
+      let activeProjectId = null;
+      let activeProject = null;
+
+      function saveDraft(value) {
+        localStorage.setItem(DRAFT_STORAGE_KEY, value);
+      }
+
+      function loadDraft() {
+        const draft = localStorage.getItem(DRAFT_STORAGE_KEY);
+
+        if (draft !== null) {
+          document.getElementById("taskInput").value = draft;
+        }
+      }
+
+      function clearDraft() {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+      }
+
+      function saveActiveProject(projectId) {
+        if (projectId) {
+          localStorage.setItem(ACTIVE_PROJECT_STORAGE_KEY, projectId);
+        } else {
+          localStorage.removeItem(ACTIVE_PROJECT_STORAGE_KEY);
+        }
+      }
+
+      function loadIdentity() {
+        document.getElementById("currentUserNameInput").value =
+          localStorage.getItem(USER_NAME_STORAGE_KEY) || "";
+        document.getElementById("currentUserEmailInput").value =
+          localStorage.getItem(USER_EMAIL_STORAGE_KEY) || "";
+      }
+
+      function getCurrentUser() {
+        return {
+          name: document.getElementById("currentUserNameInput").value.trim(),
+          email: document
+            .getElementById("currentUserEmailInput")
+            .value.trim()
+            .toLowerCase(),
+        };
+      }
+
+      function saveIdentity() {
+        const user = getCurrentUser();
+
+        localStorage.setItem(USER_NAME_STORAGE_KEY, user.name);
+        localStorage.setItem(USER_EMAIL_STORAGE_KEY, user.email);
+        updateOwnerControls();
+        setMessage("Utilisateur enregistre.", "success");
+        refreshProjects().catch(() => {
+          setMessage(
+            "Le serveur ne repond pas. Lance npm start puis ouvre http://localhost:5001.",
+          );
+        });
+      }
+
+      function getHeaders() {
+        const user = getCurrentUser();
+        const headers = { "Content-Type": "application/json" };
+
+        if (user.email) {
+          headers["x-user-email"] = user.email;
+        }
+
+        if (user.name) {
+          headers["x-user-name"] = user.name;
+        }
+
+        return headers;
+      }
+
+      function isCurrentUserOwner(project = activeProject) {
+        const user = getCurrentUser();
+        return Boolean(
+          project &&
+            project.ownerEmail &&
+            user.email &&
+            project.ownerEmail === user.email,
+        );
+      }
+
+      function isCurrentUserInvited(project = activeProject) {
+        return project?.access === "invite";
+      }
+
+      function hasProjectWorkspaceAccess(project = activeProject) {
+        return ["owner", "member"].includes(project?.access);
+      }
+
+      function updateOwnerControls() {
+        const isOwner = isCurrentUserOwner();
+        const hasProject = Boolean(activeProject);
+        const hasWorkspaceAccess = hasProjectWorkspaceAccess();
+        document.getElementById("updateProjectButton").disabled =
+          !hasProject || !isOwner;
+        document.getElementById("deleteProjectButton").disabled =
+          !hasProject || !isOwner;
+        document.getElementById("inviteMemberButton").disabled =
+          !hasProject || !isOwner;
+        document.getElementById("addTaskButton").disabled =
+          !hasProject || !hasWorkspaceAccess;
+        document.getElementById("taskInput").disabled =
+          !hasProject || !hasWorkspaceAccess;
+        document.getElementById("statusInput").disabled =
+          !hasProject || !hasWorkspaceAccess;
+        document.getElementById("priorityInput").disabled =
+          !hasProject || !hasWorkspaceAccess;
+      }
+
+      function setMessage(text, type = "") {
+        const message = document.getElementById("message");
+        message.textContent = text;
+        message.className = `message${type ? ` ${type}` : ""}`;
+      }
+
+      function renderEmptyState(listId, text) {
+        const list = document.getElementById(listId);
+        list.innerHTML = `<li class="list-empty">${text}</li>`;
+      }
+
+      function formatDate(dateString) {
+        return new Date(dateString).toLocaleString("fr-FR");
+      }
+
+      async function fetchProjects() {
+        const response = await fetch(`${API_BASE}/api/projects`, {
+          headers: getHeaders(),
+        });
+
+        if (!response.ok) {
+          throw new Error("Impossible de charger les projets.");
+        }
+
+        return response.json();
+      }
+
+      async function refreshProjects(preferredProjectId = activeProjectId) {
+        const projects = await fetchProjects();
+        const projectSelect = document.getElementById("projectSelect");
+        projectSelect.innerHTML = "";
+
+        if (projects.length === 0) {
+          activeProjectId = null;
+          saveActiveProject(null);
+          projectSelect.innerHTML =
+            '<option value="">Aucun projet disponible</option>';
+          document.getElementById("projectDetails").innerHTML =
+            "<strong>Aucun projet</strong><p>Cree ton premier projet pour commencer.</p>";
+          renderEmptyState("taskList", "Aucune tache pour le moment.");
+          renderEmptyState("memberList", "Aucun membre invite.");
+          renderEmptyState("historyList", "Aucune action enregistree.");
+          activeProject = null;
+          updateOwnerControls();
+          return;
+        }
+
+        projects.forEach((project) => {
+          const option = document.createElement("option");
+          option.value = project.id;
+          option.textContent = project.name;
+          projectSelect.appendChild(option);
+        });
+
+        const savedProjectId = localStorage.getItem(ACTIVE_PROJECT_STORAGE_KEY);
+        const nextProject =
+          projects.find((project) => project.id === preferredProjectId) ||
+          projects.find((project) => project.id === savedProjectId) ||
+          projects[0];
+
+        activeProjectId = nextProject.id;
+        activeProject = nextProject;
+        projectSelect.value = nextProject.id;
+        saveActiveProject(nextProject.id);
+        renderProjectDetails(nextProject);
+        updateOwnerControls();
+        await Promise.all([fetchTasks(), fetchMembers(), fetchHistory()]);
+        setMessage("");
+      }
+
+      function renderProjectDetails(project) {
+        const details = document.getElementById("projectDetails");
+        details.innerHTML = `
+          <strong>${project.name}</strong>
+          <p>${project.description || "Pas encore de description."}</p>
+          <p style="margin-top: 8px">Createur : ${project.ownerName || "Inconnu"} (${project.ownerEmail || "non defini"})</p>
+          <span class="access-badge">Acces : ${project.access || "owner"}</span>
+        `;
+        details.style.borderLeft = `5px solid ${project.color || "#3498db"}`;
+      }
+
+      async function createProject() {
+        const nameInput = document.getElementById("projectNameInput");
+        const descriptionInput = document.getElementById("projectDescriptionInput");
+        const name = nameInput.value.trim();
+        const description = descriptionInput.value.trim();
+        const user = getCurrentUser();
+
+        if (!name) {
+          setMessage("Ecris un nom de projet avant de cliquer sur Creer.");
+          return;
+        }
+
+        if (!user.name || !user.email) {
+          setMessage("Renseigne ton nom et ton email avant de creer un projet.");
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/api/projects`, {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify({
+              name,
+              description,
+              ownerName: user.name,
+              ownerEmail: user.email,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Creation impossible");
+          }
+
+          const project = await response.json();
+          nameInput.value = "";
+          descriptionInput.value = "";
+          setMessage("Projet cree.", "success");
+          await refreshProjects(project.id);
+        } catch (error) {
+          setMessage("Impossible de creer le projet.");
+        }
+      }
+
+      async function updateProject() {
+        if (!activeProjectId) {
+          setMessage("Choisis un projet a mettre a jour.");
+          return;
+        }
+
+        if (!isCurrentUserOwner()) {
+          setMessage("Seul le createur du projet peut le modifier.");
+          return;
+        }
+
+        const name = document.getElementById("projectNameInput").value.trim();
+        const description = document
+          .getElementById("projectDescriptionInput")
+          .value.trim();
+
+        if (!name) {
+          setMessage("Le nom du projet est obligatoire pour la mise a jour.");
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/api/projects/${activeProjectId}`, {
+            method: "PUT",
+            headers: getHeaders(),
+            body: JSON.stringify({ name, description }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Mise a jour impossible");
+          }
+
+          setMessage("Projet mis a jour.", "success");
+          await refreshProjects(activeProjectId);
+        } catch (error) {
+          setMessage("Impossible de mettre a jour le projet.");
+        }
+      }
+
+      async function deleteProject() {
+        if (!activeProjectId) {
+          setMessage("Choisis un projet a supprimer.");
+          return;
+        }
+
+        if (!isCurrentUserOwner()) {
+          setMessage("Seul le createur du projet peut le supprimer.");
+          return;
+        }
+
+        const confirmed = window.confirm(
+          "Supprimer ce projet ainsi que ses taches, membres et historique ?",
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/api/projects/${activeProjectId}`, {
+            method: "DELETE",
+            headers: getHeaders(),
+          });
+
+          if (!response.ok) {
+            throw new Error("Suppression impossible");
+          }
+
+          setMessage("Projet supprime.", "success");
+          await refreshProjects();
+        } catch (error) {
+          setMessage("Impossible de supprimer le projet.");
+        }
+      }
+
+      async function fetchTasks() {
+        const list = document.getElementById("taskList");
+
+        if (!activeProjectId) {
+          renderEmptyState("taskList", "Choisis ou cree un projet.");
+          return;
+        }
+
+        if (!hasProjectWorkspaceAccess()) {
+          renderEmptyState(
+            "taskList",
+            "Accepte d'abord ton invitation pour acceder aux taches de ce projet.",
+          );
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `${API_BASE}/api/tasks?projectId=${encodeURIComponent(activeProjectId)}`,
+          );
+
+          if (!response.ok) {
+            throw new Error("Impossible de charger les taches.");
+          }
+
+          const tasks = await response.json();
+          list.innerHTML = "";
+
+          if (tasks.length === 0) {
+            renderEmptyState("taskList", "Aucune tache dans ce projet.");
+            return;
+          }
+
+          tasks.forEach((task) => {
+            const li = document.createElement("li");
+            li.className = task.completed ? "completed" : "";
+
+            const meta = document.createElement("div");
+            meta.className = "task-meta";
+
+            const title = document.createElement("span");
+            title.className = "task-title";
+            title.textContent = task.title;
+            title.style.cursor = "pointer";
+            title.addEventListener("click", () => toggleTask(task.id));
+
+            const priority = document.createElement("span");
+            priority.className = "priority-badge";
+            priority.dataset.priority = task.priority || "Moyenne";
+            priority.textContent = task.priority || "Moyenne";
+
+            const status = document.createElement("span");
+            status.className = "status-badge";
+            status.textContent = task.status || "A faire";
+
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "delete-button";
+            deleteButton.textContent = "Supprimer";
+            deleteButton.addEventListener("click", () => deleteTask(task.id));
+
+            meta.appendChild(title);
+            meta.appendChild(status);
+            meta.appendChild(priority);
+            li.appendChild(meta);
+            li.appendChild(deleteButton);
+            list.appendChild(li);
+          });
+          setMessage("");
+        } catch (error) {
+          setMessage(
+            "Le serveur ne repond pas. Lance npm start puis ouvre http://localhost:5001.",
+          );
+        }
+      }
+
+      async function addTask() {
+        const input = document.getElementById("taskInput");
+        const statusInput = document.getElementById("statusInput");
+        const priorityInput = document.getElementById("priorityInput");
+        const title = input.value.trim();
+        const status = statusInput.value;
+        const priority = priorityInput.value;
+
+        if (!activeProjectId) {
+          setMessage("Cree ou choisis un projet avant d'ajouter une tache.");
+          return;
+        }
+
+        if (!hasProjectWorkspaceAccess()) {
+          setMessage("Accepte d'abord ton invitation avant d'ajouter une tache.");
+          return;
+        }
+
+        if (!title) {
+          setMessage("Ecris une tache avant de cliquer sur Ajouter.");
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/api/tasks`, {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify({
+              title,
+              status,
+              priority,
+              projectId: activeProjectId,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Ajout impossible");
+          }
+
+          input.value = "";
+          statusInput.value = "A faire";
+          priorityInput.value = "Moyenne";
+          clearDraft();
+          setMessage("Tache ajoutee.", "success");
+          await Promise.all([fetchTasks(), fetchHistory()]);
+        } catch (error) {
+          setMessage("Impossible d'ajouter la tache.");
+        }
+      }
+
+      async function toggleTask(taskId) {
+        try {
+          const response = await fetch(`${API_BASE}/api/tasks/${taskId}`, {
+            method: "PUT",
+            headers: getHeaders(),
+          });
+
+          if (!response.ok) {
+            throw new Error("Mise a jour impossible");
+          }
+
+          await Promise.all([fetchTasks(), fetchHistory()]);
+        } catch (error) {
+          setMessage("Impossible de changer le statut de la tache.");
+        }
+      }
+
+      async function deleteTask(taskId) {
+        try {
+          const response = await fetch(`${API_BASE}/api/tasks/${taskId}`, {
+            method: "DELETE",
+            headers: getHeaders(),
+          });
+
+          if (!response.ok) {
+            throw new Error("Suppression impossible");
+          }
+
+          setMessage("Tache supprimee.", "success");
+          await Promise.all([fetchTasks(), fetchHistory()]);
+        } catch (error) {
+          setMessage("Impossible de supprimer la tache.");
+        }
+      }
+
+      async function fetchMembers() {
+        if (!activeProjectId) {
+          renderEmptyState("memberList", "Choisis ou cree un projet.");
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `${API_BASE}/api/projects/${activeProjectId}/members`,
+            {
+              headers: getHeaders(),
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error("Impossible de charger les membres.");
+          }
+
+          const members = await response.json();
+          const list = document.getElementById("memberList");
+          list.innerHTML = "";
+
+          if (members.length === 0) {
+            renderEmptyState("memberList", "Aucun membre invite.");
+            return;
+          }
+
+          members.forEach((member) => {
+            const li = document.createElement("li");
+            li.className = "member-item";
+            li.innerHTML = `
+              <div class="member-line">
+                <strong>${member.name}</strong>
+                <span class="member-role">${member.role}</span>
+              </div>
+              <span class="member-email">${member.email} - ${member.status}</span>
+            `;
+
+            const actions = document.createElement("div");
+            actions.className = "member-actions";
+
+            if (
+              member.status === "invite" &&
+              member.email === getCurrentUser().email
+            ) {
+              const acceptButton = document.createElement("button");
+              acceptButton.className = "small-button";
+              acceptButton.textContent = "Accepter";
+              acceptButton.addEventListener("click", () =>
+                acceptInvitation(member.id),
+              );
+              actions.appendChild(acceptButton);
+            }
+
+            if (isCurrentUserOwner()) {
+              const removeButton = document.createElement("button");
+              removeButton.className = "delete-button small-button";
+              removeButton.textContent = "Retirer";
+              removeButton.addEventListener("click", () =>
+                removeMember(member.id),
+              );
+              actions.appendChild(removeButton);
+            }
+
+            if (actions.childElementCount > 0) {
+              li.appendChild(actions);
+            }
+
+            list.appendChild(li);
+          });
+        } catch (error) {
+          setMessage("Impossible de charger les membres du projet.");
+        }
+      }
+
+      async function inviteMember() {
+        const nameInput = document.getElementById("memberNameInput");
+        const emailInput = document.getElementById("memberEmailInput");
+        const roleInput = document.getElementById("memberRoleInput");
+        const name = nameInput.value.trim();
+        const email = emailInput.value.trim();
+        const role = roleInput.value;
+
+        if (!activeProjectId) {
+          setMessage("Choisis un projet avant d'inviter un membre.");
+          return;
+        }
+
+        if (!name || !email) {
+          setMessage("Renseigne le nom et l'email du membre.");
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `${API_BASE}/api/projects/${activeProjectId}/members`,
+            {
+              method: "POST",
+              headers: getHeaders(),
+              body: JSON.stringify({ name, email, role }),
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error("Invitation impossible");
+          }
+
+          nameInput.value = "";
+          emailInput.value = "";
+          roleInput.value = "Membre";
+          setMessage("Invitation envoyee.", "success");
+          await Promise.all([fetchMembers(), fetchHistory()]);
+        } catch (error) {
+          setMessage("Impossible d'inviter ce membre.");
+        }
+      }
+
+      async function acceptInvitation(memberId) {
+        try {
+          const response = await fetch(
+            `${API_BASE}/api/projects/${activeProjectId}/members/${memberId}/accept`,
+            {
+              method: "PUT",
+              headers: getHeaders(),
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error("Acceptation impossible");
+          }
+
+          setMessage("Invitation acceptee.", "success");
+          await refreshProjects(activeProjectId);
+        } catch (error) {
+          setMessage("Impossible d'accepter cette invitation.");
+        }
+      }
+
+      async function removeMember(memberId) {
+        try {
+          const response = await fetch(
+            `${API_BASE}/api/projects/${activeProjectId}/members/${memberId}`,
+            {
+              method: "DELETE",
+              headers: getHeaders(),
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error("Suppression impossible");
+          }
+
+          setMessage("Membre retire.", "success");
+          await Promise.all([fetchMembers(), fetchHistory()]);
+        } catch (error) {
+          setMessage("Impossible de retirer ce membre.");
+        }
+      }
+
+      async function fetchHistory() {
+        if (!activeProjectId) {
+          renderEmptyState("historyList", "Choisis ou cree un projet.");
+          return;
+        }
+
+        if (!hasProjectWorkspaceAccess()) {
+          renderEmptyState(
+            "historyList",
+            "Accepte d'abord ton invitation pour voir l'historique.",
+          );
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `${API_BASE}/api/projects/${activeProjectId}/history`,
+            {
+              headers: getHeaders(),
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error("Impossible de charger l'historique.");
+          }
+
+          const entries = await response.json();
+          const list = document.getElementById("historyList");
+          list.innerHTML = "";
+
+          if (entries.length === 0) {
+            renderEmptyState("historyList", "Aucune action enregistree.");
+            return;
+          }
+
+          entries.forEach((entry) => {
+            const li = document.createElement("li");
+            li.className = "history-item";
+            li.innerHTML = `
+              <div class="history-line">
+                <strong>${entry.action}</strong>
+                <span>${entry.actor}</span>
+              </div>
+              <span class="history-meta">${entry.details || "Sans details"} - ${formatDate(entry.createdAt)}</span>
+            `;
+            list.appendChild(li);
+          });
+        } catch (error) {
+          setMessage("Impossible de charger l'historique du projet.");
+        }
+      }
+
+      async function handleProjectChange() {
+        activeProjectId = document.getElementById("projectSelect").value || null;
+        saveActiveProject(activeProjectId);
+
+        if (!activeProjectId) {
+          renderEmptyState("taskList", "Choisis ou cree un projet.");
+          renderEmptyState("memberList", "Choisis ou cree un projet.");
+          renderEmptyState("historyList", "Choisis ou cree un projet.");
+          return;
+        }
+
+        try {
+          const projects = await fetchProjects();
+          const project = projects.find((item) => item.id === activeProjectId);
+
+          if (project) {
+            activeProject = project;
+            renderProjectDetails(project);
+          }
+
+          document.getElementById("projectNameInput").value = project?.name || "";
+          document.getElementById("projectDescriptionInput").value =
+            project?.description || "";
+          updateOwnerControls();
+          await Promise.all([fetchTasks(), fetchMembers(), fetchHistory()]);
+        } catch (error) {
+          setMessage("Impossible de changer de projet.");
+        }
+      }
+
+      document
+        .getElementById("taskInput")
+        .addEventListener("input", (event) => saveDraft(event.target.value));
+
+      document
+        .getElementById("taskInput")
+        .addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            addTask();
+          }
+        });
+
+      document
+        .getElementById("projectSelect")
+        .addEventListener("change", handleProjectChange);
+
+      document
+        .getElementById("addTaskButton")
+        .addEventListener("click", addTask);
+
+      document
+        .getElementById("createProjectButton")
+        .addEventListener("click", createProject);
+
+      document
+        .getElementById("updateProjectButton")
+        .addEventListener("click", updateProject);
+
+      document
+        .getElementById("deleteProjectButton")
+        .addEventListener("click", deleteProject);
+
+      document
+        .getElementById("inviteMemberButton")
+        .addEventListener("click", inviteMember);
+
+      document
+        .getElementById("saveIdentityButton")
+        .addEventListener("click", saveIdentity);
+
+      document
+        .getElementById("refreshProjectsButton")
+        .addEventListener("click", () => refreshProjects());
+
+      loadIdentity();
+      loadDraft();
+      refreshProjects().catch(() => {
+        setMessage(
+          "Le serveur ne repond pas. Lance npm start puis ouvre http://localhost:5001.",
+        );
+      });
+    </script>
+  </body>
+</html>
